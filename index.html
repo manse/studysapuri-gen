@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+<head>
+<title>studysapuri-gen</title>
+</head>
+<body>
+<canvas width="800" height="297" id="preview"></canvas>
+<hr>
+<textarea cols="20" rows="5" id="text"></textarea><br>
+<script>
+window.onload = function() {
+	var canvasSize = 800;
+	var lineHeight = 40;
+	var fontSize = 31;
+	var pasteX = 157;
+	var pasteY = 148;
+	var pasteWidth = 118;
+	var pasteHeight = 237;
+	var img = document.createElement('img');
+	img.onload = function() {
+		document.getElementById('text').onkeyup = render;
+		render();
+	};
+	img.src = 'src.png';
+	document.getElementById('text').value = location.href.split('#')[1] || '"スタディサプリ"を';
+
+	function render() {
+		var ctx = document.getElementById('preview').getContext('2d');
+		var text = document.getElementById('text').value;
+		ctx.drawImage(img, 0, 0);
+		if (!text) return;
+		var letterLayer = generateLetterLayer(text);
+		var geom = calcGeometry(letterLayer);
+		var scale;
+		if (geom.width / geom.height > pasteWidth / pasteHeight) {
+			scale = pasteWidth / geom.width;
+		} else {
+			scale = pasteHeight / geom.height;
+		}
+		if (scale > 1) {
+			scale = 1;
+		}
+		var destWidth = geom.width * scale;
+		var destHeight = geom.height * scale;
+		ctx.drawImage(letterLayer, canvasSize - geom.width, 0, geom.width, geom.height, pasteX - destWidth / 2, pasteY - destHeight / 2, destWidth, destHeight);
+	}
+
+	function calcGeometry(cvs) {
+		var ctx = cvs.getContext('2d');
+		var data = ctx.getImageData(0, 0, cvs.width, cvs.height).data;
+		var resultX = canvasSize, resultY = 0;
+		for (var y = 0, xx = cvs.width, yy = cvs.height; y < yy; y++) {
+			for (var x = xx - 1; x >= 0; x--) {
+				var i = ((y * xx) + x) * 4 + 3;
+				if (data[i] > 128) {
+					resultX = Math.min(resultX, x);
+					resultY = Math.max(resultY, y);
+				}
+			}
+		}
+		return {
+			width: canvasSize - resultX + 10,
+			height: resultY + 5
+		};
+	}
+
+	function generateLetterLayer(text, width, height) {
+		var cvs = document.createElement('canvas');
+		cvs.width = width || canvasSize;
+		cvs.height = height || canvasSize;
+		var ctx = cvs.getContext('2d');
+		var lines = text.split("\n");
+		ctx.textBaseline = 'top';
+		var quotCount = 1;
+		for (var y = 0, i = 0, yy = lines.length, ii = text.length; y < yy; y++) {
+			var offsetY = 0;
+			for (var x = 0, xx = lines[y].length; x < xx; x++, i++) {
+				var char = lines[y][x];
+				var isQuot = "'\"".indexOf(char) != -1;
+				if (quotCount % 2 == 0 || isQuot) {
+					ctx.font = fontSize + 'px HiraKakuStdN-W8';
+				} else {
+					ctx.font = fontSize + 'px HiraMinProN-W3';
+				}
+				var charWidth = ctx.measureText(char).width;
+				var textAlign = 0.5;
+				var tempOffsetY = offsetY;
+				if (isQuot) {
+					textAlign = quotCount % 2;
+					quotCount++;
+					offsetY += fontSize / 2;
+				} else {
+					if ('ァィゥェォャュョヶッぁぃぅぇぉゃゅょっ'.indexOf(char) != -1) {
+						tempOffsetY -= 5;
+						textAlign = 1;
+						offsetY += fontSize * 0.9;
+					} else {
+						offsetY += fontSize;
+					}
+				}
+				ctx.fillText(char, cvs.width - (y + 1) * lineHeight + (fontSize - charWidth) * textAlign, tempOffsetY);
+			}
+		}
+		return cvs;
+	}
+};
+</script>
+</body>
+</html>
