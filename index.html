@@ -105,7 +105,16 @@ window.onload = function() {
 						offsetY += fontSize;
 					}
 				}
-				ctx.fillText(char, cvs.width - (y + 1) * lineHeight + (fontSize - charWidth) * textAlign, tempOffsetY);
+				ctx.save();
+				ctx.translate(cvs.width - (y + 1) * lineHeight + (fontSize - charWidth) * textAlign, tempOffsetY);
+				if ('ー−-―‐〜＝'.indexOf(char) != -1) {
+					ctx.translate(charWidth / 2, fontSize / 2);
+					ctx.rotate(-Math.PI * 0.5);
+					ctx.scale(-1, 1);
+					ctx.translate(-charWidth / 2, -fontSize / 2);
+				}
+				ctx.fillText(char, 0, 0);
+				ctx.restore();
 			}
 		}
 		return cvs;
